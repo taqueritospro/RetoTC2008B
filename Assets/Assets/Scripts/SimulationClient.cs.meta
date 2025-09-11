@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: 42fde182b352fca47870d804ade0fa76
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - doorClosedPrefab: {fileID: 9073396269353616633, guid: 2d40b412bb31b544badfeb4e5599e60c, type: 3}
+  - doorOpenPrefab: {fileID: 7080771873569448873, guid: 8b66862e80ed9604cba68f240c16124a, type: 3}
+  - entrancePrefab: {fileID: 1065551963511398139, guid: 029a8fcff5c59844d9f44058248b25f5, type: 3}
+  - falseAlarmPrefab: {fileID: 4426156114520121433, guid: 7d2e26d52a593084597906744989042e, type: 3}
+  - firePrefab: {fileID: 8784528562908825645, guid: 93d645b4ad13b6d4aa31664f067bf3af, type: 3}
+  - firefighterPrefab: {fileID: 7907483968339854668, guid: 1d660aff98622714dbd45b9d6ccfc32e, type: 3}
+  - gridPrefab: {fileID: 2652994767268261363, guid: 8bcc6f31ef91ca644b7f833b657efcea, type: 3}
+  - poiPrefab: {fileID: 4718998852931241948, guid: d68be722c4ac0444e9208494afb066cb, type: 3}
+  - smokePrefab: {fileID: 2749224678794541774, guid: 9b0f2d9a8e0926647ad85ce89c60329e, type: 3}
+  - victimFoundPrefab: {fileID: 2612525048558381791, guid: f0e0885ee67306c41b8d44d519ccb676, type: 3}
+  - wallPrefab: {fileID: 5155600724033227296, guid: b39138652ef0ede4490a5094fb67cb16, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

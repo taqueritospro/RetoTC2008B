@@ -1,0 +1,6 @@
+{
+  "name": "StarterAssetsRuntime",
+  "references": [
+    "Unity.InputSystem"
+  ]
+}
