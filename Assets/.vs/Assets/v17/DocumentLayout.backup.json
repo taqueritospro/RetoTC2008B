@@ -3,8 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\oswal\\Desktop\\retoInt\\Assets\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{17533FA3-357A-CEC6-ED1C-9FA92629C572}|Assembly-CSharp.csproj|c:\\users\\oswal\\desktop\\retoint\\assets\\assets\\scripts\\bomberosunityclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{17533FA3-357A-CEC6-ED1C-9FA92629C572}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\bomberosunityclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{17533FA3-357A-CEC6-ED1C-9FA92629C572}|Assembly-CSharp.csproj|c:\\users\\oswal\\desktop\\retoint\\assets\\assets\\scripts\\simulationclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{17533FA3-357A-CEC6-ED1C-9FA92629C572}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\simulationclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\oswal\\Desktop\\retoInt\\Assets\\Assets\\Scripts\\BomberosUnityClient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\Scripts\\BomberosUnityClient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -19,15 +23,26 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "SimulationClient.cs",
+              "DocumentMoniker": "C:\\Users\\oswal\\Desktop\\retoInt\\Assets\\Assets\\Scripts\\SimulationClient.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\SimulationClient.cs",
+              "ToolTip": "C:\\Users\\oswal\\Desktop\\retoInt\\Assets\\Assets\\Scripts\\SimulationClient.cs",
+              "RelativeToolTip": "Assets\\Scripts\\SimulationClient.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-11T13:16:10.477Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "BomberosUnityClient.cs",
               "DocumentMoniker": "C:\\Users\\oswal\\Desktop\\retoInt\\Assets\\Assets\\Scripts\\BomberosUnityClient.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\BomberosUnityClient.cs",
               "ToolTip": "C:\\Users\\oswal\\Desktop\\retoInt\\Assets\\Assets\\Scripts\\BomberosUnityClient.cs",
               "RelativeToolTip": "Assets\\Scripts\\BomberosUnityClient.cs",
-              "ViewState": "AgIAAOMAAAAAAAAAAAAnwPYAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-09-11T09:24:28.976Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-09-11T09:24:28.976Z"
             }
           ]
         }
