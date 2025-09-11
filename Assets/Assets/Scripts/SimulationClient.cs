@@ -114,41 +114,21 @@ public class SimulationClient : MonoBehaviour
     [Header("Configuración del Servidor")]
     public string serverUrl = "http://localhost:5000";
 
-    [Header("Prefabs")]
-    public GameObject doorClosedPrefab;
-    public GameObject doorOpenPrefab;
-    public GameObject entrancePrefab;
-    public GameObject falseAlarmPrefab;
-    public GameObject firePrefab;
-    public GameObject firefighterPrefab;
-    public GameObject floorPrefab; // Cambiar a floor individual
-    public GameObject poiPrefab;
-    public GameObject smokePrefab;
-    public GameObject victimFoundPrefab;
-    public GameObject wallPrefab;
-
     [Header("Estado de la Simulación")]
     public bool simulationActive = false;
     public bool autoRunActive = false;
 
     // Variables internas
     private EstadoSimulacion estadoActual;
-    private List<GameObject> objetosSpawneados = new List<GameObject>();
-    private Dictionary<int, GameObject> bomberoObjects = new Dictionary<int, GameObject>();
-
-    // Colores para diferentes tipos de bomberos
-    private Dictionary<string, Color> coloresBomberos = new Dictionary<string, Color>
-    {
-        {"apagafuegos", Color.red},
-        {"buscador", Color.blue},
-        {"salvador", Color.green},
-        {"abre_puertas", Color.yellow}
-    };
+    private Vector2 scrollPosition = Vector2.zero;
 
     // Variables para UI
     private GUIStyle titleStyle;
     private GUIStyle labelStyle;
+    private GUIStyle jsonStyle;
     private bool showDetailedInfo = true;
+    private bool showRawJSON = false;
+    private string lastRawJSON = "";
 
     void Start()
     {
@@ -159,6 +139,7 @@ public class SimulationClient : MonoBehaviour
         Debug.Log("O - Toggle auto-run");
         Debug.Log("P - Pausar auto-run");
         Debug.Log("I - Toggle info detallada");
+        Debug.Log("J - Toggle JSON raw");
 
         // Configurar estilos GUI
         titleStyle = new GUIStyle();
@@ -169,6 +150,11 @@ public class SimulationClient : MonoBehaviour
         labelStyle = new GUIStyle();
         labelStyle.fontSize = 12;
         labelStyle.normal.textColor = Color.white;
+
+        jsonStyle = new GUIStyle();
+        jsonStyle.fontSize = 10;
+        jsonStyle.normal.textColor = Color.green;
+        jsonStyle.wordWrap = true;
     }
 
     void Update()
@@ -197,6 +183,10 @@ public class SimulationClient : MonoBehaviour
         {
             showDetailedInfo = !showDetailedInfo;
         }
+        else if (Input.GetKeyDown(KeyCode.J))
+        {
+            showRawJSON = !showRawJSON;
+        }
     }
 
     IEnumerator InicializarSimulacion()
@@ -215,13 +205,14 @@ public class SimulationClient : MonoBehaviour
 
             try
             {
+                lastRawJSON = www.downloadHandler.text;
                 RespuestaServidor respuesta = JsonUtility.FromJson<RespuestaServidor>(www.downloadHandler.text);
                 Debug.Log($"Respuesta: {respuesta.message}");
 
                 if (respuesta.status == "success" && respuesta.estado != null)
                 {
                     simulationActive = true;
-                    ActualizarVisualizacion(respuesta.estado);
+                    ActualizarEstado(respuesta.estado);
                 }
                 else
                 {
@@ -256,12 +247,13 @@ public class SimulationClient : MonoBehaviour
 
             try
             {
+                lastRawJSON = www.downloadHandler.text;
                 RespuestaServidor respuesta = JsonUtility.FromJson<RespuestaServidor>(www.downloadHandler.text);
 
                 if (respuesta.estado != null)
                 {
                     Debug.Log($"Step ejecutado - Turno: {respuesta.estado.estadisticas.turno}");
-                    ActualizarVisualizacion(respuesta.estado);
+                    ActualizarEstado(respuesta.estado);
 
                     if (respuesta.estado.estadisticas.juegoTerminado)
                     {
@@ -294,6 +286,7 @@ public class SimulationClient : MonoBehaviour
 
             try
             {
+                lastRawJSON = www.downloadHandler.text;
                 RespuestaServidor respuesta = JsonUtility.FromJson<RespuestaServidor>(www.downloadHandler.text);
                 Debug.Log($"Simulación reiniciada: {respuesta.message}");
 
@@ -301,7 +294,7 @@ public class SimulationClient : MonoBehaviour
                 {
                     simulationActive = true;
                     autoRunActive = false;
-                    ActualizarVisualizacion(respuesta.estado);
+                    ActualizarEstado(respuesta.estado);
                 }
             }
             catch (Exception e)
@@ -359,7 +352,7 @@ public class SimulationClient : MonoBehaviour
         }
     }
 
-    void ActualizarVisualizacion(EstadoSimulacion estado)
+    void ActualizarEstado(EstadoSimulacion estado)
     {
         if (estado == null)
         {
@@ -369,272 +362,28 @@ public class SimulationClient : MonoBehaviour
 
         estadoActual = estado;
 
-        // Validaciones básicas
-        if (estado.dimensiones == null)
-        {
-            Debug.LogError("Dimensiones son nulas");
-            return;
-        }
-
-        if (estado.grid == null)
-        {
-            Debug.LogError("Grid es nulo");
-            return;
-        }
-
-        if (estado.marcadores == null)
-        {
-            Debug.LogError("Marcadores son nulos");
-            return;
-        }
-
-        Debug.Log($"=== ACTUALIZANDO VISUALIZACIÓN ===");
+        Debug.Log($"=== ESTADO ACTUALIZADO ===");
         Debug.Log($"Turno: {estado.estadisticas?.turno ?? 0}");
-        Debug.Log($"Dimensiones: {estado.dimensiones.ancho}x{estado.dimensiones.alto}");
-        Debug.Log($"Grid filas: {estado.grid.Count}");
+        Debug.Log($"Dimensiones: {estado.dimensiones?.ancho ?? 0}x{estado.dimensiones?.alto ?? 0}");
 
-        // Limpiar objetos anteriores
-        LimpiarObjetos();
-
-        // Generar grid y elementos estáticos
-        GenerarGrid(estado);
-
-        // Generar elementos dinámicos
-        GenerarElementosDinamicos(estado);
-
-        // Mostrar estadísticas
+        // Mostrar estadísticas en consola
         if (estado.estadisticas != null)
         {
-            MostrarEstadisticas(estado.estadisticas);
+            MostrarEstadisticasConsola(estado.estadisticas);
         }
 
-        Debug.Log($"Total de objetos spawneados: {objetosSpawneados.Count}");
-    }
-
-    void LimpiarObjetos()
-    {
-        foreach (GameObject obj in objetosSpawneados)
-        {
-            if (obj != null)
-                DestroyImmediate(obj);
-        }
-        objetosSpawneados.Clear();
-
-        foreach (var kvp in bomberoObjects)
-        {
-            if (kvp.Value != null)
-                DestroyImmediate(kvp.Value);
-        }
-        bomberoObjects.Clear();
-    }
-
-    void GenerarGrid(EstadoSimulacion estado)
-    {
-        if (estado.grid == null || estado.grid.Count == 0)
-        {
-            Debug.LogError("Grid vacío o nulo");
-            return;
-        }
-
-        // Generar pisos y paredes
-        for (int y = 0; y < estado.dimensiones.alto; y++)
-        {
-            if (y >= estado.grid.Count)
-            {
-                Debug.LogError($"Fila {y} no existe en grid");
-                continue;
-            }
-
-            for (int x = 0; x < estado.dimensiones.ancho; x++)
-            {
-                if (x >= estado.grid[y].Count)
-                {
-                    Debug.LogError($"Columna {x} no existe en fila {y}");
-                    continue;
-                }
-
-                CeldaData celda = estado.grid[y][x];
-                Vector3 posicion = new Vector3(x * 10f, 0, y * 10f); // Espaciado de 10 unidades
-
-                // Generar piso base
-                if (celda.esPiso && floorPrefab != null)
-                {
-                    GameObject floorObj = Instantiate(floorPrefab, posicion, Quaternion.identity);
-                    objetosSpawneados.Add(floorObj);
-                }
-
-                // Generar paredes
-                GenerarParedes(celda, posicion);
-            }
-        }
-
-        // Generar elementos estáticos
-        GenerarElementosEstaticos(estado);
-    }
-
-    void GenerarParedes(CeldaData celda, Vector3 posicionBase)
-    {
-        if (wallPrefab == null || celda.paredes == null) return;
-
-        // [arriba, izquierda, abajo, derecha]
-        Vector3[] offsetsParedes = {
-            new Vector3(0, 2.5f, 5f),    // arriba
-            new Vector3(-5f, 2.5f, 0),   // izquierda  
-            new Vector3(0, 2.5f, -5f),   // abajo
-            new Vector3(5f, 2.5f, 0)     // derecha
-        };
-
-        Vector3[] rotaciones = {
-            new Vector3(0, 0, 0),      // arriba
-            new Vector3(0, 90, 0),     // izquierda
-            new Vector3(0, 180, 0),    // abajo
-            new Vector3(0, 270, 0)     // derecha
-        };
-
-        for (int i = 0; i < celda.paredes.Length && i < 4; i++)
-        {
-            if (celda.paredes[i] == 1)
-            {
-                Vector3 posicionPared = posicionBase + offsetsParedes[i];
-                Quaternion rotacionPared = Quaternion.Euler(rotaciones[i]);
-                GameObject paredObj = Instantiate(wallPrefab, posicionPared, rotacionPared);
-                objetosSpawneados.Add(paredObj);
-            }
-        }
-    }
-
-    void GenerarElementosEstaticos(EstadoSimulacion estado)
-    {
-        // Generar entradas
-        if (estado.marcadores.entradas != null)
-        {
-            foreach (var entrada in estado.marcadores.entradas)
-            {
-                if (entrancePrefab != null)
-                {
-                    Vector3 pos = new Vector3(entrada.x * 10f, 1f, entrada.y * 10f);
-                    GameObject entranceObj = Instantiate(entrancePrefab, pos, Quaternion.identity);
-                    objetosSpawneados.Add(entranceObj);
-                }
-            }
-        }
-
-        // Generar puertas cerradas
-        if (estado.marcadores.puertasCerradas != null)
-        {
-            foreach (var puerta in estado.marcadores.puertasCerradas)
-            {
-                if (doorClosedPrefab != null)
-                {
-                    Vector3 pos = new Vector3(puerta.x * 10f, 1f, puerta.y * 10f);
-                    GameObject doorObj = Instantiate(doorClosedPrefab, pos, Quaternion.identity);
-                    objetosSpawneados.Add(doorObj);
-                }
-            }
-        }
-
-        // Generar puertas abiertas
-        if (estado.marcadores.puertasAbiertas != null)
-        {
-            foreach (var puerta in estado.marcadores.puertasAbiertas)
-            {
-                if (doorOpenPrefab != null)
-                {
-                    Vector3 pos = new Vector3(puerta.x * 10f, 1f, puerta.y * 10f);
-                    GameObject doorObj = Instantiate(doorOpenPrefab, pos, Quaternion.identity);
-                    objetosSpawneados.Add(doorObj);
-                }
-            }
-        }
-    }
-
-    void GenerarElementosDinamicos(EstadoSimulacion estado)
-    {
-        // Generar fuego
-        if (estado.marcadores.fuego != null)
-        {
-            foreach (var fuego in estado.marcadores.fuego)
-            {
-                if (firePrefab != null)
-                {
-                    Vector3 pos = new Vector3(fuego.x * 10f, 2f, fuego.y * 10f);
-                    GameObject fireObj = Instantiate(firePrefab, pos, Quaternion.identity);
-                    objetosSpawneados.Add(fireObj);
-                }
-            }
-        }
-
-        // Generar humo
-        if (estado.marcadores.humo != null)
-        {
-            foreach (var humo in estado.marcadores.humo)
-            {
-                if (smokePrefab != null)
-                {
-                    Vector3 pos = new Vector3(humo.x * 10f, 3f, humo.y * 10f);
-                    GameObject smokeObj = Instantiate(smokePrefab, pos, Quaternion.identity);
-                    objetosSpawneados.Add(smokeObj);
-                }
-            }
-        }
-
-        // Generar POIs
-        if (estado.marcadores.pois != null)
-        {
-            foreach (var poi in estado.marcadores.pois)
-            {
-                GameObject prefabAUsar = poi.tipo == "victima" ? poiPrefab : falseAlarmPrefab;
-                if (prefabAUsar != null)
-                {
-                    Vector3 pos = new Vector3(poi.x * 10f, 1.5f, poi.y * 10f);
-                    GameObject poiObj = Instantiate(prefabAUsar, pos, Quaternion.identity);
-                    objetosSpawneados.Add(poiObj);
-                }
-            }
-        }
-
-        // Generar víctimas encontradas
-        if (estado.marcadores.victimasEncontradas != null)
-        {
-            foreach (var victima in estado.marcadores.victimasEncontradas)
-            {
-                if (victimFoundPrefab != null)
-                {
-                    Vector3 pos = new Vector3(victima.x * 10f, 2.5f, victima.y * 10f);
-                    GameObject victimObj = Instantiate(victimFoundPrefab, pos, Quaternion.identity);
-                    objetosSpawneados.Add(victimObj);
-                }
-            }
-        }
-
-        // Generar bomberos
+        // Mostrar información de bomberos
         if (estado.bomberos != null)
         {
+            Debug.Log($"Bomberos en juego: {estado.bomberos.Count}");
             foreach (var bombero in estado.bomberos)
             {
-                if (firefighterPrefab != null)
-                {
-                    Vector3 pos = new Vector3(bombero.posicion.x * 10f, 5f, bombero.posicion.y * 10f);
-                    GameObject bomberoObj = Instantiate(firefighterPrefab, pos, Quaternion.identity);
-
-                    // Cambiar color según tipo
-                    if (coloresBomberos.ContainsKey(bombero.tipo))
-                    {
-                        Renderer renderer = bomberoObj.GetComponent<Renderer>();
-                        if (renderer != null)
-                        {
-                            renderer.material.color = coloresBomberos[bombero.tipo];
-                        }
-                    }
-
-                    bomberoObjects[bombero.id] = bomberoObj;
-                    objetosSpawneados.Add(bomberoObj);
-                }
+                Debug.Log($"Bombero {bombero.id} ({bombero.tipo}): Pos({bombero.posicion.x},{bombero.posicion.y}) - {bombero.estado} - AP:{bombero.puntosAccion}/{bombero.maxPuntosAccion}");
             }
         }
     }
 
-    void MostrarEstadisticas(Estadisticas stats)
+    void MostrarEstadisticasConsola(Estadisticas stats)
     {
         Debug.Log($"=== TURNO {stats.turno} ===");
         Debug.Log($"Víctimas rescatadas: {stats.victimasRescatadas}/{stats.victimasParaGanar}");
@@ -654,9 +403,9 @@ public class SimulationClient : MonoBehaviour
     void OnGUI()
     {
         // Panel de controles
-        GUI.Box(new Rect(10, 10, 320, 200), "FLASH POINT - CONTROLES");
+        GUI.Box(new Rect(10, 10, 320, 220), "FLASH POINT - CONTROLES");
 
-        GUILayout.BeginArea(new Rect(20, 40, 300, 160));
+        GUILayout.BeginArea(new Rect(20, 40, 300, 180));
 
         GUILayout.Label("=== CONTROLES ===", titleStyle);
         GUILayout.Label("S - Inicializar simulación", labelStyle);
@@ -665,6 +414,7 @@ public class SimulationClient : MonoBehaviour
         GUILayout.Label("O - Toggle auto-run", labelStyle);
         GUILayout.Label("P - Pausar auto-run", labelStyle);
         GUILayout.Label("I - Toggle info detallada", labelStyle);
+        GUILayout.Label("J - Toggle JSON raw", labelStyle);
 
         GUILayout.Space(10);
 
@@ -678,39 +428,121 @@ public class SimulationClient : MonoBehaviour
         GUILayout.EndArea();
 
         // Panel de estadísticas detalladas
-        if (showDetailedInfo && estadoActual != null && estadoActual.estadisticas != null)
+        if (showDetailedInfo && estadoActual != null)
         {
-            var stats = estadoActual.estadisticas;
+            MostrarPanelEstadisticas();
+        }
 
-            GUI.Box(new Rect(Screen.width - 350, 10, 340, 300), "ESTADÍSTICAS");
+        // Panel de JSON raw
+        if (showRawJSON && !string.IsNullOrEmpty(lastRawJSON))
+        {
+            MostrarPanelJSON();
+        }
+    }
 
-            GUILayout.BeginArea(new Rect(Screen.width - 340, 40, 320, 260));
+    void MostrarPanelEstadisticas()
+    {
+        var stats = estadoActual.estadisticas;
+        if (stats == null) return;
 
-            GUILayout.Label("=== ESTADO DEL JUEGO ===", titleStyle);
-            GUILayout.Label($"Turno: {stats.turno}", labelStyle);
-            GUILayout.Label($"Juego terminado: {(stats.juegoTerminado ? "SÍ" : "NO")}", labelStyle);
+        GUI.Box(new Rect(Screen.width - 400, 10, 390, 500), "INFORMACIÓN DETALLADA");
 
-            if (stats.juegoTerminado && !string.IsNullOrEmpty(stats.resultado))
+        GUILayout.BeginArea(new Rect(Screen.width - 390, 40, 370, 450));
+        scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(370), GUILayout.Height(450));
+
+        GUILayout.Label("=== ESTADO DEL JUEGO ===", titleStyle);
+        GUILayout.Label($"Turno: {stats.turno}", labelStyle);
+        GUILayout.Label($"Paso: {estadoActual.paso}", labelStyle);
+        GUILayout.Label($"Timestamp: {estadoActual.timestamp}", labelStyle);
+        GUILayout.Label($"Dimensiones: {estadoActual.dimensiones?.ancho ?? 0}x{estadoActual.dimensiones?.alto ?? 0}", labelStyle);
+        GUILayout.Label($"Juego terminado: {(stats.juegoTerminado ? "SÍ" : "NO")}", labelStyle);
+
+        if (stats.juegoTerminado && !string.IsNullOrEmpty(stats.resultado))
+        {
+            GUIStyle resultStyle = new GUIStyle(labelStyle);
+            resultStyle.normal.textColor = Color.yellow;
+            GUILayout.Label($"Resultado: {stats.resultado}", resultStyle);
+        }
+
+        GUILayout.Space(10);
+        GUILayout.Label("=== VÍCTIMAS ===", titleStyle);
+        GUILayout.Label($"Rescatadas: {stats.victimasRescatadas} / {stats.victimasParaGanar}", labelStyle);
+        GUILayout.Label($"Perdidas: {stats.victimasPerdidas} / {stats.maxVictimasPerdidas}", labelStyle);
+        GUILayout.Label($"Encontradas: {stats.victimasEncontradas}", labelStyle);
+
+        GUILayout.Space(10);
+        GUILayout.Label("=== PELIGROS ===", titleStyle);
+        GUILayout.Label($"Puntos daño: {stats.puntosDano} / {stats.maxPuntosDano}", labelStyle);
+        GUILayout.Label($"Fuegos activos: {stats.totalFuegosActivos}", labelStyle);
+        GUILayout.Label($"Humos activos: {stats.totalHumosActivos}", labelStyle);
+        GUILayout.Label($"POIs restantes: {stats.totalPoisActivos}", labelStyle);
+
+        // Información de bomberos
+        if (estadoActual.bomberos != null && estadoActual.bomberos.Count > 0)
+        {
+            GUILayout.Space(10);
+            GUILayout.Label("=== BOMBEROS ===", titleStyle);
+            foreach (var bombero in estadoActual.bomberos)
             {
-                GUIStyle resultStyle = new GUIStyle(labelStyle);
-                resultStyle.normal.textColor = Color.yellow;
-                GUILayout.Label($"Resultado: {stats.resultado}", resultStyle);
+                GUILayout.Label($"ID {bombero.id} - {bombero.tipo}", labelStyle);
+                GUILayout.Label($"  Pos: ({bombero.posicion?.x ?? 0},{bombero.posicion?.y ?? 0})", labelStyle);
+                GUILayout.Label($"  Estado: {bombero.estado}", labelStyle);
+                GUILayout.Label($"  AP: {bombero.puntosAccion}/{bombero.maxPuntosAccion}", labelStyle);
+                GUILayout.Label($"  Llevando víctima: {(bombero.llevandoVictima ? "SÍ" : "NO")}", labelStyle);
+                GUILayout.Label($"  Modo: {bombero.modo}", labelStyle);
+                GUILayout.Space(5);
             }
+        }
 
+        // Información de marcadores
+        if (estadoActual.marcadores != null)
+        {
+            var marc = estadoActual.marcadores;
             GUILayout.Space(10);
-            GUILayout.Label("=== VÍCTIMAS ===", titleStyle);
-            GUILayout.Label($"Rescatadas: {stats.victimasRescatadas} / {stats.victimasParaGanar}", labelStyle);
-            GUILayout.Label($"Perdidas: {stats.victimasPerdidas} / {stats.maxVictimasPerdidas}", labelStyle);
-            GUILayout.Label($"Encontradas: {stats.victimasEncontradas}", labelStyle);
+            GUILayout.Label("=== MARCADORES ===", titleStyle);
+            GUILayout.Label($"Fuegos: {marc.fuego?.Count ?? 0}", labelStyle);
+            GUILayout.Label($"Humos: {marc.humo?.Count ?? 0}", labelStyle);
+            GUILayout.Label($"POIs: {marc.pois?.Count ?? 0}", labelStyle);
+            GUILayout.Label($"Víctimas encontradas: {marc.victimasEncontradas?.Count ?? 0}", labelStyle);
+            GUILayout.Label($"Puertas cerradas: {marc.puertasCerradas?.Count ?? 0}", labelStyle);
+            GUILayout.Label($"Puertas abiertas: {marc.puertasAbiertas?.Count ?? 0}", labelStyle);
+            GUILayout.Label($"Entradas: {marc.entradas?.Count ?? 0}", labelStyle);
+        }
 
-            GUILayout.Space(10);
-            GUILayout.Label("=== PELIGROS ===", titleStyle);
-            GUILayout.Label($"Puntos daño: {stats.puntosDano} / {stats.maxPuntosDano}", labelStyle);
-            GUILayout.Label($"Fuegos activos: {stats.totalFuegosActivos}", labelStyle);
-            GUILayout.Label($"Humos activos: {stats.totalHumosActivos}", labelStyle);
-            GUILayout.Label($"POIs restantes: {stats.totalPoisActivos}", labelStyle);
+        GUILayout.EndScrollView();
+        GUILayout.EndArea();
+    }
 
-            GUILayout.EndArea();
+    void MostrarPanelJSON()
+    {
+        GUI.Box(new Rect(10, 250, Screen.width - 20, Screen.height - 260), "JSON RAW");
+
+        GUILayout.BeginArea(new Rect(20, 280, Screen.width - 40, Screen.height - 290));
+
+        Vector2 jsonScrollPosition = GUILayout.BeginScrollView(Vector2.zero, GUILayout.Width(Screen.width - 40), GUILayout.Height(Screen.height - 290));
+        GUILayout.Label(FormatJSON(lastRawJSON), jsonStyle);
+        GUILayout.EndScrollView();
+
+        GUILayout.EndArea();
+    }
+
+    string FormatJSON(string json)
+    {
+        // Formateo básico del JSON para mejor legibilidad
+        if (string.IsNullOrEmpty(json)) return "";
+
+        try
+        {
+            // Formateo simple añadiendo saltos de línea después de comas y llaves
+            return json.Replace(",", ",\n")
+                      .Replace("{", "{\n")
+                      .Replace("}", "\n}")
+                      .Replace("[", "[\n")
+                      .Replace("]", "\n]");
+        }
+        catch
+        {
+            return json; // Devolver original si hay error en formateo
         }
     }
 }
