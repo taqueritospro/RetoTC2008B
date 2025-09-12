@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 003f825518bd40e40bcffdaeb15ac36c
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 226392
+  packageName: PBR Pachycephalasaurus
+  packageVersion: 1.0
+  assetPath: Assets/PBRPachycephalasaurus/Materials/PBR/PachycephalasaurusBodyA.mat
+  uploadId: 522320
