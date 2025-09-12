@@ -34,19 +34,23 @@ auto_thread.start()
 
 @app.route('/inicializar', methods=['POST'])
 def inicializar_simulacion():
-    """Inicializa una nueva simulación"""
-    global simulacion_activa
+    global simulacion_activa, modelo_actual
     try:
-        crear_modelo()
+        data = request.get_json(force=True)
+        modo = data.get("modo", "estrategia")
+
+        if modo == "aleatorio":
+            modelo_actual = CAleatorioUnity(archivo_config)
+        else:
+            modelo_actual = CEstrategiaUnity(archivo_config)
+
         simulacion_activa = True
         estado_inicial = modelo_actual.capturarEstadoActual()
-        
-        response = {
+        return jsonify({
             "status": "success",
-            "message": "Simulación inicializada correctamente",
+            "message": f"Simulación {modo} inicializada correctamente",
             "estado": estado_inicial
-        }
-        return jsonify(response)
+        })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 

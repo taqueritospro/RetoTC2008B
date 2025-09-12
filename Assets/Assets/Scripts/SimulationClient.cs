@@ -123,11 +123,13 @@ public class RespuestaServidor
 public class SimulationClient : MonoBehaviour
 {
     // Referencias a las cámaras del juego.
-    [Header("Cámaras")]
     public Camera ndCamera; // Cámara en 2D vista superior.
     public Camera rdCamera; // Cámara en 3D renderizada.
     public Camera mainCamera; // Cámara principal por defecto.
     private Camera activeCamera; // Cámara actualmente activa.
+
+    public enum TipoImplementacion { Aleatorio, Estrategia }
+    public TipoImplementacion tipo = TipoImplementacion.Estrategia;
 
     private Camera[] cameras; // Array de todas las cámaras disponibles.
     private int cameraIndex = 0; // Índice de la cámara actual.
@@ -139,11 +141,9 @@ public class SimulationClient : MonoBehaviour
     private Coroutine autoRunCoroutine; // Referencia a la corrutina de auto-run.
 
     // Configuración de conexión con el servidor.
-    [Header("Configuración del Servidor")]
     public string serverUrl = "http://localhost:5000"; // URL base del servidor.
 
     // Variables de control del estado de la simulación.
-    [Header("Estado de la Simulación")]
     public bool simulationActive = false; // Indica si la simulación está activa.
     public bool autoRunActive = false; // Indica si el auto-run está activo.
 
@@ -256,11 +256,19 @@ public class SimulationClient : MonoBehaviour
     {
         Debug.Log("Inicializando simulación...");
 
-        using (UnityWebRequest www = UnityWebRequest.PostWwwForm($"{serverUrl}/inicializar", ""))
+        // Determinar el modo elegido
+        string modo = tipo == TipoImplementacion.Aleatorio ? "aleatorio" : "estrategia";
+        string jsonData = $"{{\"modo\":\"{modo}\"}}";
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
+
+        using (UnityWebRequest www = new UnityWebRequest($"{serverUrl}/inicializar", "POST"))
         {
+            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+
             yield return www.SendWebRequest();
 
-            // Verificar si hubo errores en la petición.
             if (www.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError($"Error inicializando: {www.error}");
@@ -269,12 +277,10 @@ public class SimulationClient : MonoBehaviour
 
             try
             {
-                // Guardar JSON sin procesar y deserializar la respuesta.
                 lastRawJSON = www.downloadHandler.text;
                 RespuestaServidor respuesta = JsonConvert.DeserializeObject<RespuestaServidor>(www.downloadHandler.text);
                 Debug.Log($"Respuesta: {respuesta.message}");
 
-                // Si la respuesta es exitosa, activar la simulación.
                 if (respuesta.status == "success" && respuesta.estado != null)
                 {
                     simulationActive = true;
@@ -287,12 +293,12 @@ public class SimulationClient : MonoBehaviour
             }
             catch (Exception e)
             {
-                // Manejo de errores en el parsing del JSON.
                 Debug.LogError($"Error parseando JSON: {e.Message}");
                 Debug.LogError($"JSON recibido: {www.downloadHandler.text}");
             }
         }
     }
+
 
     // Corrutina que ejecuta un paso de la simulación en el servidor.
     IEnumerator EjecutarStep()

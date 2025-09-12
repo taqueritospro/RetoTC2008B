@@ -286,8 +286,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridRenderer
   cellPrefab: {fileID: 7985098665411398619, guid: ae0051f1cc08aec488de6121ff68a8d2, type: 3}
-  firePrefab: {fileID: 8784528562908825645, guid: 93d645b4ad13b6d4aa31664f067bf3af, type: 3}
-  smokePrefab: {fileID: 6243953879535608655, guid: 9b0f2d9a8e0926647ad85ce89c60329e, type: 3}
+  firePrefab: {fileID: 9058915566059715635, guid: 898a899846c064447af4b9ff8cdda634, type: 3}
+  smokePrefab: {fileID: 797302835331598528, guid: 800afac51641264428964f104c65037b, type: 3}
   firefighterPrefab: {fileID: 7907483968339854668, guid: 1d660aff98622714dbd45b9d6ccfc32e, type: 3}
   poiPrefab: {fileID: 7026915805892523360, guid: 1d6ddef785b61d143a5856cad26f6374, type: 3}
   victimFoundPrefab: {fileID: 4132449301315768627, guid: dc373823c21e3a0428a9d79be7a9d12c, type: 3}
@@ -615,6 +615,7 @@ MonoBehaviour:
   ndCamera: {fileID: 1216714382}
   rdCamera: {fileID: 427435503}
   mainCamera: {fileID: 340369309}
+  tipo: 1
   stepDelay: 0.25
   serverUrl: http://localhost:5000
   simulationActive: 0
