@@ -577,7 +577,7 @@ class CJuego(Model):
 
     def __init__(self, archivoConfiguracion=None):
         super().__init__()
-
+	
         # Dimensiones de la grid.
         self.width = 8
         self.height = 6
@@ -614,6 +614,7 @@ class CJuego(Model):
         self.entradas = set()
         self.paredes = {}  # {(x, y): [arriba, izquierda, abajo, derecha]}
         self.gridPiso = {}  # {(x, y): True/False} - True = piso, False = pared
+        self.puertaDirs = {}  # {(x,y): dir}
 
         self.cargarConfiguracion(archivoConfiguracion)
 
@@ -698,7 +699,20 @@ class CJuego(Model):
                         r1, c1, r2, c2 = int(datos[0])-1, int(datos[1])-1, int(datos[2])-1, int(datos[3])-1
                         if (0 <= r1 < self.height and 0 <= c1 < self.width and
                             0 <= r2 < self.height and 0 <= c2 < self.width):
-                            self.puertasCerradas.add((c1, r1))
+
+                            # Detectar dirección según diferencia entre celdas
+                            if r1 == r2:  # horizontal
+                                if c1 < c2:
+                                    self.puertasCerradas.add((c1, r1))
+                                    self.puertaDirs[(c1, r1)] = 3  # derecha
+                                    self.puertasCerradas.add((c2, r2))
+                                    self.puertaDirs[(c2, r2)] = 1  # izquierda
+                            elif c1 == c2:  # vertical
+                                if r1 < r2:
+                                    self.puertasCerradas.add((c1, r1))
+                                    self.puertaDirs[(c1, r1)] = 2  # abajo
+                                    self.puertasCerradas.add((c2, r2))
+                                    self.puertaDirs[(c2, r2)] = 0  # arriba
                     idx += 1
 
             # Cargar entradas.
@@ -1127,7 +1141,12 @@ class CUnity(CJuego):
         # Capturar estado inicial
         self.capturarEstadoActual()
     
-    # Método que captura el estado actual para Unity.
+    # Convertir puertas a lista de marcadores con dirección
+    def convertir_puerta(self, puerta):
+        x, y, dir = puerta
+        return {"x": x, "y": y, "tipo": str(dir)}
+        # Método que captura el estado actual para Unity.
+
     def capturarEstadoActual(self):
         
         # Información de los bomberos.
@@ -1180,8 +1199,8 @@ class CUnity(CJuego):
             "humo": [{"x": pos[0], "y": pos[1]} for pos in self.humoPosiciones],
             "pois": [{"x": pos[0], "y": pos[1], "tipo": tipo} for pos, tipo in self.poiPosiciones.items()],
             "victimasEncontradas": [{"x": pos[0], "y": pos[1]} for pos in self.victimasEncontradasPosiciones],
-            "puertasCerradas": [{"x": pos[0], "y": pos[1]} for pos in self.puertasCerradas],
-            "puertasAbiertas": [{"x": pos[0], "y": pos[1]} for pos in self.puertasAbiertas],
+            "puertasCerradas": [{"x": x, "y": y, "tipo": str(self.puertaDirs.get((x,y),0))} for (x, y) in self.puertasCerradas],
+            "puertasAbiertas": [{"x": x, "y": y, "tipo": str(self.puertaDirs.get((x,y),0))} for (x, y) in self.puertasAbiertas],
             "entradas": [{"x": pos[0], "y": pos[1]} for pos in self.entradas]
         }
         
