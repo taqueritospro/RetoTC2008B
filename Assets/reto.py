@@ -1152,11 +1152,10 @@ class CUnity(CJuego):
             }
             bomberosInfo.append(bomberoData)
         
-        # CORRECCIÓN: Información del grid - cambiar el orden de los bucles
+        # Información del grid.
         gridInfo = []
-        for y in range(self.height):  # Cambiar: primero Y (filas)
-            fila = []
-            for x in range(self.width):  # Luego X (columnas)
+        for y in range(self.height):       # recorre filas
+            for x in range(self.width):    # recorre columnas
                 pos = (x, y)
                 celdaData = {
                     "x": x,
@@ -1171,10 +1170,9 @@ class CUnity(CJuego):
                     "esPuertaCerrada": pos in self.puertasCerradas,
                     "esPuertaAbierta": pos in self.puertasAbiertas,
                     "esEntrada": pos in self.entradas,
-                    "paredes": self.paredes.get(pos, [0, 0, 0, 0])  # [arriba, izquierda, abajo, derecha]
-                }
-                fila.append(celdaData)
-            gridInfo.append(fila)
+                    "paredes": self.paredes.get(pos, [0, 0, 0, 0])
+                      }
+                gridInfo.append(celdaData)
         
         # Información de marcadores/efectos
         marcadores = {
@@ -1261,5 +1259,74 @@ class CEstrategiaUnity(CUnity, CEstrategia):
         cambiarModoBomberos(self.bomberos, CModoAgente.ESTRATEGIA)
 
 # ======================================
-# ======= Servidor en Flask ===========
+# ====== Resultados Comparacion ========
 # ======================================
+
+def ejecutarMultiplesIteraciones(num_iteraciones, archivo_config, tipo_solucion):
+    resultados = []
+
+    for i in range(num_iteraciones):
+        if tipo_solucion == "aleatoria":
+            modelo = CAleatorio(archivo_config)
+        elif tipo_solucion == "estrategica":
+            modelo = CEstrategia(archivo_config)
+        else:
+            raise ValueError(f"Tipo de solución no válido: {tipo_solucion}")
+
+        resultado = modelo.runModel()
+        resultados.append(resultado)
+    return resultados
+
+def analizarResultados(resultados, nombre_estrategia):
+    print(f"\n=== ESTADÍSTICAS - {nombre_estrategia.upper()} ===")
+
+    # Métricas a analizar
+    metricas = ['victimasRescatadas', 'victimasPerdidas', 'puntosDano', 'turnos', 'fuegosFinales', 'humosFinales']
+
+    for metrica in metricas:
+        valores = [r[metrica] for r in resultados]
+
+        minimo = min(valores)
+        maximo = max(valores)
+        promedio = sum(valores) / len(valores)
+
+        print(f"{metrica}:")
+        print(f"  Mín: {minimo}")
+        print(f"  Pro: {promedio:.2f}")
+        print(f"  Máx: {maximo}")
+
+    # Contar resultados
+    resultados_conteo = {}
+    for r in resultados:
+        resultado = r['resultado']
+        resultados_conteo[resultado] = resultados_conteo.get(resultado, 0) + 1
+
+    print(f"\nResultados finales:")
+    for resultado, count in resultados_conteo.items():
+        porcentaje = (count / len(resultados)) * 100
+        print(f"  {resultado}: {count} ({porcentaje:.1f}%)")
+
+# Ejecutar análisis
+NUM_ITERACIONES = 1000
+
+print("Ejecutando análisis de múltiples iteraciones...")
+print(f"Número de iteraciones por estrategia: {NUM_ITERACIONES}")
+
+# Analizar estrategia aleatoria
+print("\n--- Ejecutando estrategia ALEATORIA ---")
+resultados_aleatorios = ejecutarMultiplesIteraciones(NUM_ITERACIONES, "txtxd.txt", "aleatoria")
+analizarResultados(resultados_aleatorios, "ALEATORIA")
+
+# Analizar estrategia estratégica
+print("\n--- Ejecutando estrategia ESTRATÉGICA ---")
+resultados_estrategicos = ejecutarMultiplesIteraciones(NUM_ITERACIONES, "txtxd.txt", "estrategica")
+analizarResultados(resultados_estrategicos, "ESTRATÉGICA")
+
+print(f"\n=== COMPARACIÓN DE PROMEDIOS ===")
+print(f"Promedio víctimas rescatadas:")
+print(f"  Solución Aleatoria: {sum(r['victimasRescatadas'] for r in resultados_aleatorios) / len(resultados_aleatorios):.2f}")
+print(f"  Solución Estratégica: {sum(r['victimasRescatadas'] for r in resultados_estrategicos) / len(resultados_estrategicos):.2f}")
+
+print(f"Promedio turnos:")
+print(f"  Solución Aleatoria: {sum(r['turnos'] for r in resultados_aleatorios) / len(resultados_aleatorios):.2f}")
+print(f"  Solución Estratégica: {sum(r['turnos'] for r in resultados_estrategicos) / len(resultados_estrategicos):.2f}")
