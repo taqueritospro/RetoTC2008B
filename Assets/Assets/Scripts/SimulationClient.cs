@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using System;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 [System.Serializable]
 public class Posicion
@@ -94,7 +96,7 @@ public class EstadoSimulacion
     public int paso;
     public Dimensiones dimensiones;
     public List<Bombero> bomberos;
-    public List<List<CeldaData>> grid;
+    public List<CeldaData> grid;
     public Marcadores marcadores;
     public Estadisticas estadisticas;
     public int timestamp;
@@ -140,6 +142,8 @@ public class SimulationClient : MonoBehaviour
         Debug.Log("P - Pausar auto-run");
         Debug.Log("I - Toggle info detallada");
         Debug.Log("J - Toggle JSON raw");
+        
+        gridRenderer = FindFirstObjectByType<GridRenderer>();
 
         // Configurar estilos GUI
         titleStyle = new GUIStyle();
@@ -206,7 +210,7 @@ public class SimulationClient : MonoBehaviour
             try
             {
                 lastRawJSON = www.downloadHandler.text;
-                RespuestaServidor respuesta = JsonUtility.FromJson<RespuestaServidor>(www.downloadHandler.text);
+                RespuestaServidor respuesta = JsonConvert.DeserializeObject<RespuestaServidor>(www.downloadHandler.text);
                 Debug.Log($"Respuesta: {respuesta.message}");
 
                 if (respuesta.status == "success" && respuesta.estado != null)
@@ -248,7 +252,7 @@ public class SimulationClient : MonoBehaviour
             try
             {
                 lastRawJSON = www.downloadHandler.text;
-                RespuestaServidor respuesta = JsonUtility.FromJson<RespuestaServidor>(www.downloadHandler.text);
+                RespuestaServidor respuesta = JsonConvert.DeserializeObject<RespuestaServidor>(www.downloadHandler.text);
 
                 if (respuesta.estado != null)
                 {
@@ -287,7 +291,7 @@ public class SimulationClient : MonoBehaviour
             try
             {
                 lastRawJSON = www.downloadHandler.text;
-                RespuestaServidor respuesta = JsonUtility.FromJson<RespuestaServidor>(www.downloadHandler.text);
+                RespuestaServidor respuesta = JsonConvert.DeserializeObject<RespuestaServidor>(www.downloadHandler.text);
                 Debug.Log($"Simulación reiniciada: {respuesta.message}");
 
                 if (respuesta.estado != null)
@@ -321,7 +325,7 @@ public class SimulationClient : MonoBehaviour
 
             try
             {
-                RespuestaServidor respuesta = JsonUtility.FromJson<RespuestaServidor>(www.downloadHandler.text);
+                RespuestaServidor respuesta = JsonConvert.DeserializeObject<RespuestaServidor>(www.downloadHandler.text);
                 autoRunActive = respuesta.auto_run;
                 Debug.Log($"Auto-run: {(autoRunActive ? "ACTIVADO" : "DESACTIVADO")}");
             }
@@ -352,6 +356,8 @@ public class SimulationClient : MonoBehaviour
         }
     }
 
+    private GridRenderer gridRenderer;
+
     void ActualizarEstado(EstadoSimulacion estado)
     {
         if (estado == null)
@@ -380,6 +386,41 @@ public class SimulationClient : MonoBehaviour
             {
                 Debug.Log($"Bombero {bombero.id} ({bombero.tipo}): Pos({bombero.posicion.x},{bombero.posicion.y}) - {bombero.estado} - AP:{bombero.puntosAccion}/{bombero.maxPuntosAccion}");
             }
+        }
+        if (gridRenderer != null && estado.grid != null)
+        {
+            gridRenderer.RenderGrid(estado.grid, estado.dimensiones.ancho, estado.dimensiones.alto);
+        }
+        if (gridRenderer != null && estado.marcadores != null)
+        {
+            gridRenderer.RenderFire(estado.marcadores.fuego);
+        }
+        if (gridRenderer != null && estado.marcadores != null)
+        {
+            gridRenderer.RenderSmoke(estado.marcadores.humo);
+        }
+        if (gridRenderer != null && estado.bomberos != null)
+        {
+            gridRenderer.RenderFirefighters(estado.bomberos);
+        }
+        if (gridRenderer != null && estado.marcadores != null)
+        {
+            gridRenderer.RenderPOIs(estado.marcadores.pois);
+            gridRenderer.RenderVictimFound(estado.marcadores.victimasEncontradas);
+        }
+        gridRenderer.puertasCerradas.Clear();
+        gridRenderer.puertasAbiertas.Clear();
+
+        foreach (var p in estado.marcadores.puertasCerradas)
+            gridRenderer.puertasCerradas.Add((p.x, p.y, 0));
+
+        foreach (var p in estado.marcadores.puertasAbiertas)
+            gridRenderer.puertasAbiertas.Add((p.x, p.y, 0));
+
+        if (gridRenderer != null && estado.grid != null)
+        {
+            gridRenderer.RenderWalls(estado.grid, estado.dimensiones.alto);
+            gridRenderer.RenderDoors(estado.grid, estado.dimensiones.alto);
         }
     }
 
