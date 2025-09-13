@@ -5,7 +5,6 @@ using UnityEngine;
 public class GridRenderer : MonoBehaviour
 {
     // Referencias a los prefabs que se instanciarán para representar cada elemento.
-    [Header("Prefabs")]
     public GameObject cellPrefab; // Prefab para las celdas del piso.
     public GameObject firePrefab; // Prefab para representar fuego.
     public GameObject smokePrefab; // Prefab para representar humo.
@@ -16,7 +15,6 @@ public class GridRenderer : MonoBehaviour
     public GameObject doorPrefab; // Prefab para puertas.
 
     // Configuración visual del grid.
-    [Header("Configuración del grid")]
     public float cellSize = 1.01f; // Tamaño de cada celda en unidades de Unity.
 
     // Diccionarios para almacenar referencias a los objetos instanciados y poder reutilizarlos.
